@@ -40,3 +40,30 @@ Do not run `php artisan migrate:fresh`, `db:wipe`, or truncate tables on a datab
 ## Current limitations
 - File attachments, advanced permissions, category administration, audit logs and reports are planned for later phases.
 - Automated Laravel tests require Composer dependencies and a configured test database. PHP syntax checks have been run, but runtime/database tests have not yet been executed in this packaged environment.
+
+## Phase 3: Categories and user administration
+
+- Admin and Manager roles can manage categories.
+- Admin role can create users, change roles, update profile details, and activate/deactivate accounts.
+- Available roles: `admin`, `manager`, `staff`, `viewer`.
+- User administration routes are protected server-side by the `role:admin` middleware; category routes use `role:admin,manager`.
+- Users are deactivated rather than deleted so record ownership/history is retained.
+- Categories referenced by records cannot be deleted; deactivate them instead.
+
+Run the additive migrations with `php artisan migrate` after taking a database backup. Do not use `migrate:fresh` on an existing database.
+
+### Initial administrator setup
+
+For security, the application does not ship with a public default administrator password. After creating your own account through the normal registration process or using a trusted existing account, promote that account from the server terminal:
+
+```bash
+php artisan tinker
+```
+
+Then run (replace the email with the account you control):
+
+```php
+App\\Models\\User::where('email', 'you@example.com')->update(['role' => 'admin', 'is_active' => true]);
+```
+
+Exit Tinker with `exit`. Do not expose or share administrator credentials. The seeded `test@example.com` account is for local development only; do not use it in production.
