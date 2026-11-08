@@ -14,8 +14,8 @@ class RecordManagementTest extends TestCase
 
     public function test_authenticated_user_can_create_and_view_a_record(): void
     {
-        $user = User::factory()->create();
-        $category = Category::create(['name' => 'Letters', 'slug' => 'letters', 'is_active' => true]);
+        $user = User::factory()->create(['role' => 'staff', 'is_active' => true]);
+        $category = Category::where('slug', 'letters')->firstOrFail();
 
         $response = $this->actingAs($user)->post(route('records.store'), [
             'title' => 'Request for information',
@@ -46,7 +46,7 @@ class RecordManagementTest extends TestCase
 
     public function test_record_can_be_archived_and_restored(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['role' => 'manager', 'is_active' => true]);
         $record = Record::create([
             'reference_number' => 'RR-TEST-00001',
             'title' => 'Archive test',

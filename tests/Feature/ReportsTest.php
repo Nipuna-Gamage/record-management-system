@@ -15,7 +15,7 @@ class ReportsTest extends TestCase
     public function test_manager_can_view_filtered_reports(): void
     {
         $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
-        $category = Category::create(['name' => 'Letters', 'slug' => 'letters', 'is_active' => true]);
+        $category = Category::where('slug', 'letters')->firstOrFail();
         Record::create([
             'reference_number' => 'RR-REPORT-0001', 'title' => 'Incoming letter',
             'document_type' => 'incoming', 'category_id' => $category->id,
@@ -23,7 +23,7 @@ class ReportsTest extends TestCase
         ]);
 
         $this->actingAs($manager)->get(route('reports.index', ['type' => 'incoming']))
-            ->assertOk()->assertSee('Reports &amp; Analytics')->assertSee('Incoming letter')
+            ->assertOk()->assertSee('Reports & Analytics')->assertSee('Incoming letter')
             ->assertSee('RR-REPORT-0001');
     }
 

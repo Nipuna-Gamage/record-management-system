@@ -1,159 +1,339 @@
 # RecordRoom
 
-RecordRoom is a Laravel 11 document and records management application.
+RecordRoom is a secure, modern document and records management system built with **Laravel 11**, **Blade**, and **Tailwind CSS**. It provides complete lifecycle record tracking, role-based access control, private file attachments, an immutable activity audit trail, advanced reports with CSV exports, global search, and automated due-date reminders.
 
-## Current features
+---
 
-### Phase 1 — Foundation
-- Login and logout
-- Active-account check
-- User roles foundation
-- Responsive application shell
+## Table of Contents
 
-### Phase 2 — Record management
-- Create, list, view and edit records
-- Generated unique reference numbers (`RR-YYYYMMDD-XXXXX`)
-- Incoming, outgoing, internal and other document types
-- Categories, department and document date
-- Search by reference, title and department
-- Filter by type and active / archived status
-- Archive and restore records
-- Dashboard counts and recently added records
+- [Key Features](#key-features)
+- [Role-Based Access Control (RBAC)](#role-based-access-control-rbac)
+- [System Requirements](#system-requirements)
+- [Installation & Setup](#installation--setup)
+- [Initial Administrator Account](#initial-administrator-account)
+- [Task Scheduling & Due Date Reminders](#task-scheduling--due-date-reminders)
+- [File Attachment Storage & Upload Limits](#file-attachment-storage--upload-limits)
+- [Security Features](#security-features)
+- [Automated Testing](#automated-testing)
+- [Production Deployment Checklist](#production-deployment-checklist)
+- [Directory Structure](#directory-structure)
+- [License](#license)
 
-## Requirements
-- PHP 8.2+
-- Composer
-- A supported database (MySQL/MariaDB recommended)
+---
 
-## Setup
-1. Install dependencies: `composer install`
-2. Copy `.env.example` to `.env` if `.env` does not exist.
-3. Configure database connection values in `.env`.
-4. Generate an application key only if `APP_KEY` is empty: `php artisan key:generate`
-5. Run additive migrations: `php artisan migrate`
-6. Run automated tests: `php artisan test`
-7. Start local server: `php artisan serve`
+## Key Features
 
-## Important data-safety note
-Do not run `php artisan migrate:fresh`, `db:wipe`, or truncate tables on a database containing important data. Back up the database before applying migrations.
+### 📁 Record Lifecycle Management
+- **Automatic Reference Generation**: Formats unique reference numbers automatically (`RR-YYYYMMDD-XXXXX`).
+- **Document Categorization**: Classifies documents by type (`Incoming`, `Outgoing`, `Internal`, `Other`), category, and department.
+- **Date Tracking**: Tracks document issue dates and optional compliance due dates (`due_at`).
+- **Status Lifecycle**: Supports active records and soft archiving/restoration workflows with full audit logging.
+- **Interactive Dashboard**: Displays real-time counts for active and archived records alongside recent additions.
 
-## Current limitations
-- File attachments, advanced permissions, category administration, audit logs and reports are planned for later phases.
-- Automated Laravel tests require Composer dependencies and a configured test database. PHP syntax checks have been run, but runtime/database tests have not yet been executed in this packaged environment.
+### 📎 Secure Private Attachments
+- **Multi-File Uploads**: Upload up to 10 files per request (up to 10 MB per file).
+- **Supported File Formats**: PDF, DOC, DOCX, XLS, XLSX, JPG, JPEG, and PNG.
+- **Private Storage**: Files are stored on Laravel's private `local` disk (`storage/app/record-attachments/`) outside the public web root.
+- **Protected Downloads**: Files are streamed through authenticated routes with ownership and access validation.
+- **Archive Protection**: Archived records lock attachment upload and deletion operations to prevent accidental tampering.
 
-## Phase 3: Categories and user administration
+### 🔍 Global & Granular Search
+- **Header Global Search**: Quick cross-field search across reference numbers, titles, descriptions, departments, and category names.
+- **Input Validation**: Safe query length validation (2–100 characters) and Blade-escaped rendering to prevent XSS.
+- **Granular Filters**: Filter record listings by document type, active/archived status, department, and category.
 
-- Admin and Manager roles can manage categories.
-- Admin role can create users, change roles, update profile details, and activate/deactivate accounts.
-- Available roles: `admin`, `manager`, `staff`, `viewer`.
-- User administration routes are protected server-side by the `role:admin` middleware; category routes use `role:admin,manager`.
-- Users are deactivated rather than deleted so record ownership/history is retained.
-- Categories referenced by records cannot be deleted; deactivate them instead.
+### 📊 Reports & Analytics
+- **Summary Metrics**: View total, active, and archived volume breakdowns.
+- **Visual Distributions**: Review document-type distribution, category distribution, and a 6-month historical activity timeline.
+- **Excel-Compatible CSV Export**: Streams CSV exports with a UTF-8 BOM (ensuring proper rendering of Unicode characters like Sinhala) and sanitizes formula-triggering characters (`=`, `+`, `-`, `@`) to prevent CSV injection.
+- **Print / PDF Ready**: Styled print layout enabling instantaneous browser-native "Save as PDF" reports without heavy third-party PDF dependencies.
 
-Run the additive migrations with `php artisan migrate` after taking a database backup. Do not use `migrate:fresh` on an existing database.
+### 🛡️ Activity Logs & Audit Trail
+- **Comprehensive Audit Trail**: Automatically logs key events:
+  - **Authentication**: Successful logins, failed login attempts, and logouts.
+  - **Records**: Creation, updates, archiving, and restoration.
+  - **Attachments**: Uploads, authenticated downloads, and deletions.
+  - **Categories**: Creation, updates, and deletions.
+  - **User Administration**: Creation, profile updates, and activation/deactivation.
+- **Audit Detail**: Records actor ID/name, action type, description, affected model ID, client IP address, user agent, and timestamp.
+- **Tamper-Resistant**: Logs are restricted to system administrators and cannot be altered or deleted from the user interface.
 
-### Initial administrator setup
+### 🔔 Notifications & Automated Reminders
+- **In-App Notification Center**: Accessible at `/notifications` with unread badges, pagination, single mark-as-read, and mark-all-as-read capabilities.
+- **Creation Notifications**: Notifies the creator and active Administrators/Managers whenever a new record is added.
+- **Due Date Alerts**: Automatically scans active records and notifies assignees and managers when a record is due today or within the next 3 days.
+- **Safe Navigation**: Notification links validate target destinations against an internal route allowlist to guard against open redirect exploits.
 
-For security, the application does not ship with a public default administrator password. After creating your own account through the normal registration process or using a trusted existing account, promote that account from the server terminal:
+---
 
+## Role-Based Access Control (RBAC)
+
+RecordRoom implements strict server-side authorization via the `EnsureUserHasRole` middleware. Four roles are supported:
+
+| Feature / Action | Admin | Manager | Staff | Viewer |
+| :--- | :---: | :---: | :---: | :---: |
+| **View Dashboard & Records** | ✅ | ✅ | ✅ | ✅ |
+| **Download Attachments** | ✅ | ✅ | ✅ | ✅ |
+| **Create & Edit Records** | ✅ | ✅ | ✅ | ❌ |
+| **Upload & Delete Attachments** | ✅ | ✅ | ✅ | ❌ |
+| **Archive & Restore Records** | ✅ | ✅ | ❌ | ❌ |
+| **View Reports & Export CSV** | ✅ | ✅ | ❌ | ❌ |
+| **Manage Categories** | ✅ | ✅ | ❌ | ❌ |
+| **Manage Users & Role Assignment** | ✅ | ❌ | ❌ | ❌ |
+| **View Audit Trail (`/activity-logs`)** | ✅ | ❌ | ❌ | ❌ |
+
+> [!NOTE]
+> - Users are **deactivated** rather than deleted to ensure complete audit integrity and retain historical record ownership.
+> - An administrator cannot deactivate their own account or remove their own administrative privileges. At least one active administrator must remain in the system.
+> - Categories that are currently assigned to records cannot be deleted; they must be deactivated or reassigned.
+
+---
+
+## System Requirements
+
+- **PHP**: `^8.2`
+  - Required Extensions: `pdo`, `pdo_mysql` (or `pdo_sqlite`), `mbstring`, `openssl`, `tokenizer`, `xml`, `ctype`, `json`, `fileinfo`
+- **Package Managers**: Composer 2+ and Node.js (v18+ recommended) with npm
+- **Database**: MySQL 8.0+ / MariaDB 10.4+ (recommended for production) or SQLite 3.35+ (development and testing)
+- **Web Server**: Nginx, Apache, or Caddy with URL rewriting enabled
+
+---
+
+## Installation & Setup
+
+Follow these steps to set up the project locally:
+
+### 1. Clone & Enter Repository
 ```bash
-php artisan tinker
+git clone <repository-url>
+cd record-management-system
 ```
 
-Then run (replace the email with the account you control):
-
-```php
-App\\Models\\User::where('email', 'you@example.com')->update(['role' => 'admin', 'is_active' => true]);
+### 2. Install Dependencies
+Install PHP dependencies via Composer:
+```bash
+composer install
 ```
 
-Exit Tinker with `exit`. Do not expose or share administrator credentials. The seeded `test@example.com` account is for local development only; do not use it in production.
+Install frontend dependencies and compile assets:
+```bash
+npm install
+npm run build
+```
 
+### 3. Configure Environment
+Copy the environment template:
+```bash
+cp .env.example .env
+```
 
-## Phase 4 — Private Record Attachments
+Generate the unique application key:
+```bash
+php artisan key:generate
+```
 
-- Upload up to 10 files per request, maximum 10 MB each.
-- Allowed formats: PDF, DOC, DOCX, XLS, XLSX, JPG, JPEG and PNG.
-- Files are stored on Laravel's private `local` disk, not in the public web directory.
-- Downloads are served through authenticated routes and checked against the parent record.
-- Admin, Manager and Staff can upload/delete attachments; Viewer can download and view.
-- Archived records are read-only for attachment changes.
-- Additive migration: `2026_11_08_000003_create_record_attachments_table.php`.
+Configure your database connection in `.env`:
+```ini
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=recordroom
+DB_USERNAME=your_db_user
+DB_PASSWORD=your_db_password
+```
 
-Run after taking a database backup:
+*(Alternatively, for SQLite development, set `DB_CONNECTION=sqlite` and create `database/database.sqlite`.)*
 
+### 4. Run Migrations
+Run additive database migrations:
 ```bash
 php artisan migrate
-php artisan test
 ```
 
-Do not use `migrate:fresh` on a database containing records. Configure PHP's `upload_max_filesize` and `post_max_size` to at least 10M and 110M respectively (or higher) if you want to upload multiple files in one request. For production, also configure web-server request limits, malware scanning, backups, and an appropriate retention policy.
+> [!CAUTION]
+> **Data Safety Notice**: Never run `php artisan migrate:fresh`, `db:wipe`, or truncate tables on an existing environment containing live data. Always back up your database before running migrations.
 
+### 5. Start the Application
+Start the local development server:
+```bash
+php artisan serve
+```
+For active frontend development, you can run the Vite dev server concurrently:
+```bash
+npm run dev
+```
 
-## Phase 5 — Audit Logs
+Visit the application at `http://127.0.0.1:8000`.
 
-The administrator-only Activity Logs page is available at `/activity-logs`.
-It records successful sign-in/sign-out, record create/update/archive/restore,
-attachment upload/download/delete, category create/update/delete, and user
-create/update/activate/deactivate actions. Each entry stores the actor (when
-authenticated), action, description, related model, IP address, user agent,
-and timestamp. Logs are intended as an audit trail and should not be edited
-through normal application screens.
+---
 
-Run the additive migration with `php artisan migrate` after taking a database
-backup. Do not use `migrate:fresh` on a database containing records.
+## Initial Administrator Account
 
-## Phase 6 — Reports & Analytics
+Because RecordRoom restricts user creation to administrators and does not expose a public registration form, you should provision your initial administrator via Laravel Tinker:
 
-- Admins and managers can open `/reports` to view filtered record summaries, document-type and category breakdowns, monthly activity, and matching records.
-- Reports can be filtered by document date range, document type, status, category, and department.
-- The CSV export is Excel-compatible and includes a UTF-8 BOM for Unicode text. Spreadsheet formula-leading values are neutralized on export.
-- Use **Print / Save PDF** on the reports page and choose **Save as PDF** in the browser print dialog to create a PDF without adding a server-side PDF dependency.
-- Report routes are restricted to the `admin` and `manager` roles.
+1. Open Tinker in your terminal:
+   ```bash
+   php artisan tinker
+   ```
 
-### Phase 6 validation
+2. Create a new Administrator user:
+   ```php
+   App\Models\User::create([
+       'name' => 'System Administrator',
+       'email' => 'admin@example.com',
+       'password' => bcrypt('SecurePasswordHere123!'),
+       'role' => 'admin',
+       'is_active' => true,
+   ]);
+   ```
 
-Feature tests were added for manager report access, viewer authorization, and CSV export. Run `php artisan test` after installing Composer dependencies and configuring the database. The project package in this phase has been PHP syntax-checked; live database execution is not claimed unless tests are run in an installed Laravel environment.
+   *(Or promote an existing user by email):*
+   ```php
+   App\Models\User::where('email', 'admin@example.com')->update(['role' => 'admin', 'is_active' => true]);
+   ```
 
-## Phase 7 — Notifications & Reminders
+3. Type `exit` to exit Tinker. You can now log in at `/login`.
 
-- Every signed-in user has a private notification centre at `/notifications`, with unread counts, pagination, mark-as-read, and mark-all-as-read actions.
-- Creating a record sends an in-app database notification to the creator and active Admin/Manager users.
-- Records may optionally have a due date. Active records due today or within the next three days generate reminders for the record creator and active Admin/Manager users.
-- The `records:send-due-reminders` command is safe to run repeatedly on the same day; it avoids sending a duplicate reminder for the same record and recipient on that day.
-- The scheduler is configured to run the reminder command daily at 08:00 using the application timezone.
+---
 
-After backing up the database, run `php artisan migrate`. For local development, run `php artisan schedule:work` in a second terminal. On a production Linux server, configure Laravel's scheduler cron entry:
+## Task Scheduling & Due Date Reminders
 
+RecordRoom automatically schedules document due date reminders. The command `records:send-due-reminders` evaluates active records due within 3 days and dispatches in-app notifications to assignees and administrators. The command is idempotent and safe to run multiple times per day.
+
+### Local Development
+Run the artisan scheduler worker:
+```bash
+php artisan schedule:work
+```
+
+You can also execute the reminder command manually for testing:
+```bash
+php artisan records:send-due-reminders
+```
+
+### Production Crontab Setup
+Add a single cron entry to your server (typically via `crontab -e` for the `www-data` or deployment user):
 ```cron
 * * * * * cd /path-to-recordroom && php artisan schedule:run >> /dev/null 2>&1
 ```
 
-You can manually test the reminder command with `php artisan records:send-due-reminders`. Configure `APP_TIMEZONE`/`config/app.php` to the organisation's timezone before relying on the 08:00 reminder schedule. Notifications are stored in the database; configure database backups and retention as part of operations.
+> [!TIP]
+> Verify that `APP_TIMEZONE` in your `.env` or `config/app.php` matches your organization's timezone to ensure the scheduled 08:00 daily run fires at the desired local time.
 
-### Phase 7 validation
+---
 
-PHP syntax checks and ZIP integrity checks should be run after changes. Run `php artisan test` and the reminder command in a configured Laravel environment; this source package does not claim a live database test when Composer dependencies and a configured database are absent.
+## File Attachment Storage & Upload Limits
 
+### Storage Architecture
+- Record files are stored securely in `storage/app/record-attachments/{record_id}/`.
+- They are not placed in `public/` and are never accessible via static web server URLs.
+- Downloads are served through `RecordAttachmentController@download`, ensuring authentication and authorization before file streaming.
 
-## Phase 8 — Final UI/UX, Search & Security Hardening
-
-- Added authenticated global search across record reference, title, description, department and category. Search terms are validated (2–100 characters), results are paginated, and output is escaped by Blade.
-- Added responsive global search to the application header, visible keyboard focus states, reduced-motion support, and mobile layout refinements.
-- Added baseline security response headers: `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, and `Cross-Origin-Opener-Policy`. HSTS is sent only on HTTPS requests.
-- Notification click-through now accepts only a safe application-local path, rather than redirecting to an arbitrary stored external URL.
-- Added indexes for common record status, category/status, and creator/date access patterns.
-- Fixed the Record model mass-assignment allowlist so the Phase 7 `due_at` field can be persisted from validated record forms.
-- Added feature tests for global search, input validation, and security response headers.
-
-### Phase 8 validation and deployment checklist
-
-PHP syntax validation has been run across the application source. Automated Laravel tests and live database/browser testing still need to be run in an environment with Composer dependencies installed and a configured test database:
-
-```bash
-composer install
-php artisan test
-php artisan route:list
-php artisan migrate --pretend
+### Recommended PHP Configuration
+To accommodate batch uploads of multiple 10 MB files in a single request, update your `php.ini` settings:
+```ini
+upload_max_filesize = 10M
+post_max_size = 110M
+memory_limit = 256M
+max_execution_time = 60
+```
+For web servers such as Nginx, also ensure `client_max_body_size` is configured accordingly:
+```nginx
+client_max_body_size 110M;
 ```
 
-Before applying migrations to an existing installation, take and verify a database backup, then run `php artisan migrate`. Do not use `migrate:fresh`, `db:wipe`, or truncate production tables. For deployment, use HTTPS, set `APP_ENV=production` and `APP_DEBUG=false`, run `php artisan config:cache` and `php artisan route:cache`, configure the scheduler and queue strategy, and ensure `storage` and `bootstrap/cache` are writable by the web process. Review the hosting provider's PHP and web-server upload limits, private file storage permissions, backup retention, malware scanning, and log retention. Security headers are baseline protections and do not replace a full infrastructure/security review.
+---
+
+## Security Features
+
+- **HTTP Security Headers**: Injected via global `SecurityHeaders` middleware:
+  - `X-Content-Type-Options: nosniff`
+  - `X-Frame-Options: SAMEORIGIN`
+  - `Referrer-Policy: strict-origin-when-cross-origin`
+  - `Permissions-Policy: camera=(), microphone=(), geolocation=()`
+  - `Cross-Origin-Opener-Policy: same-origin`
+  - `Strict-Transport-Security: max-age=31536000; includeSubDomains` *(enforced on HTTPS requests)*
+- **Rate Limiting**: Brute-force protection applied on the login route (`throttle:6,1`).
+- **SQL & Mass Assignment Protection**: Protected through Eloquent ORM parameter bindings and explicit `$fillable` model attributes.
+- **XSS & CSV Injection Protection**: Blade automatic escaping across views; formula neutralizing prefix applied during CSV report exports.
+- **Safe Redirects**: Local destination validation on notification click-throughs to eliminate open-redirect vulnerabilities.
+
+---
+
+## Automated Testing
+
+RecordRoom includes a comprehensive test suite covering authentication, authorization, CRUD operations, attachments, reports, search, and security headers:
+
+```bash
+php artisan test
+```
+
+### Key Test Suites:
+- `tests/Feature/AuthenticationTest.php`: Login rate limiting, session invalidation, inactive account prevention.
+- `tests/Feature/RecordManagementTest.php`: Reference generation, record creation, updates, soft archiving, and restoration.
+- `tests/Feature/RecordAttachmentTest.php`: File upload validation, MIME type enforcement, download security, archive immutability.
+- `tests/Feature/ReportsTest.php`: Filtering logic, role authorization, CSV formatting, and formula neutralization.
+- `tests/Feature/GlobalSearchAndSecurityTest.php`: Search query bounds, multi-field matching, and HTTP security response headers.
+
+---
+
+## Production Deployment Checklist
+
+1. **Environment Configuration**:
+   ```ini
+   APP_ENV=production
+   APP_DEBUG=false
+   APP_URL=https://records.yourdomain.com
+   ```
+2. **Optimize Caches**:
+   ```bash
+   php artisan config:cache
+   php artisan route:cache
+   php artisan view:cache
+   ```
+3. **Storage & Directory Permissions**:
+   Ensure `storage/` and `bootstrap/cache/` are writable by the web server user:
+   ```bash
+   chown -R www-data:www-data storage bootstrap/cache
+   chmod -R 775 storage bootstrap/cache
+   ```
+4. **Database Migration**:
+   Back up your database, then run:
+   ```bash
+   php artisan migrate --force
+   ```
+5. **Configure Cron & Queue Workers**:
+   Ensure the Laravel scheduler cron entry is registered and active.
+6. **HTTPS & TLS**:
+   Serve exclusively over HTTPS with an active SSL/TLS certificate to enable HSTS headers and secure session cookies.
+
+---
+
+## Directory Structure
+
+```plaintext
+app/
+├── Console/Commands/        # Custom Artisan commands (SendRecordDueReminders)
+├── Http/
+│   ├── Controllers/         # Application controllers (Records, Attachments, Reports, Users, etc.)
+│   └── Middleware/          # Role enforcement (EnsureUserHasRole) and SecurityHeaders
+├── Models/                  # Eloquent models (Record, RecordAttachment, Category, Log, User)
+├── Notifications/           # Notification classes (RecordCreated, RecordDueReminder)
+└── Support/                 # ActivityLogger audit service
+database/
+├── migrations/              # Database schema migrations
+└── seeders/                 # Database seeders
+resources/
+└── views/                   # Blade templates (dashboard, records, reports, logs, users, search)
+routes/
+├── console.php              # Console route definitions & task schedule
+└── web.php                  # Web application routes & role middleware definitions
+storage/app/                 # Private disk storage for record attachments
+tests/                       # Feature and unit test suites
+```
+
+---
+
+## License
+
+This application is open-sourced software licensed under the [MIT license](LICENSE).
