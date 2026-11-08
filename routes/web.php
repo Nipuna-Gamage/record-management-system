@@ -27,6 +27,12 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/records/{record}', [RecordController::class, 'update'])->middleware('role:admin,manager,staff')->name('records.update');
     Route::patch('/records/{record}/archive', [RecordController::class, 'archive'])->middleware('role:admin,manager')->name('records.archive');
     Route::patch('/records/{record}/restore', [RecordController::class, 'restore'])->middleware('role:admin,manager')->name('records.restore');
+    Route::post('/records/{record}/attachments', [RecordAttachmentController::class, 'store'])
+        ->middleware('role:admin,manager,staff')->name('records.attachments.store');
+    Route::get('/records/{record}/attachments/{attachment}/download', [RecordAttachmentController::class, 'download'])
+        ->name('records.attachments.download');
+    Route::delete('/records/{record}/attachments/{attachment}', [RecordAttachmentController::class, 'destroy'])
+        ->middleware('role:admin,manager,staff')->name('records.attachments.destroy');
     Route::middleware('role:admin,manager')->group(function () {
         Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
         Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');

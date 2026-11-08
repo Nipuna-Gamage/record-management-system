@@ -67,3 +67,23 @@ App\\Models\\User::where('email', 'you@example.com')->update(['role' => 'admin',
 ```
 
 Exit Tinker with `exit`. Do not expose or share administrator credentials. The seeded `test@example.com` account is for local development only; do not use it in production.
+
+
+## Phase 4 — Private Record Attachments
+
+- Upload up to 10 files per request, maximum 10 MB each.
+- Allowed formats: PDF, DOC, DOCX, XLS, XLSX, JPG, JPEG and PNG.
+- Files are stored on Laravel's private `local` disk, not in the public web directory.
+- Downloads are served through authenticated routes and checked against the parent record.
+- Admin, Manager and Staff can upload/delete attachments; Viewer can download and view.
+- Archived records are read-only for attachment changes.
+- Additive migration: `2026_11_08_000003_create_record_attachments_table.php`.
+
+Run after taking a database backup:
+
+```bash
+php artisan migrate
+php artisan test
+```
+
+Do not use `migrate:fresh` on a database containing records. Configure PHP's `upload_max_filesize` and `post_max_size` to at least 10M and 110M respectively (or higher) if you want to upload multiple files in one request. For production, also configure web-server request limits, malware scanning, backups, and an appropriate retention policy.
