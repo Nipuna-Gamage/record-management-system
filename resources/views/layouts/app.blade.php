@@ -11,6 +11,7 @@
         <a class="brand" href="{{ route('dashboard') }}"><span class="brand-mark small-mark">RR</span><span><strong>RecordRoom</strong><small>DOCUMENT MANAGEMENT</small></span></a>
         <p class="nav-label">WORKSPACE</p>
         <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">▦ <span>Dashboard</span></a>
+        <a class="nav-link {{ request()->routeIs('records.*') ? 'active' : '' }}" href="{{ route('records.index') }}">▤ <span>Records</span></a>
         <div class="sidebar-bottom">
             <div class="user-chip"><span class="avatar">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</span><span><strong>{{ auth()->user()->name }}</strong><small>{{ str_replace('_', ' ', ucfirst(auth()->user()->role)) }}</small></span></div>
             <form method="POST" action="{{ route('logout') }}">@csrf<button class="logout" type="submit">↪ Sign out</button></form>
@@ -19,6 +20,7 @@
     <main class="main-content">
         <header class="topbar"><span>Workspace / @yield('title', 'Dashboard')</span><span class="status-dot">● System online</span></header>
         @if (session('success'))<div class="success">{{ session('success') }}</div>@endif
+        @if ($errors->any())<div class="alert validation-alert">Please check the form: {{ $errors->first() }}</div>@endif
         @yield('content')
     </main>
 </div>

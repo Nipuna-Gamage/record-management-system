@@ -1,65 +1,42 @@
-# RecordRoom – Record Management System
+# RecordRoom
 
-A Laravel 11 application for managing organizational records and documents.
+RecordRoom is a Laravel 11 document and records management application.
 
-## Current development status
+## Current features
 
-### Phase 1 – Foundation
+### Phase 1 — Foundation
 - Login and logout
-- Session regeneration on successful login
-- Login rate limiting
-- Active/inactive user account support
-- Role field and role middleware (`super_admin`, `admin`, `record_keeper`, `viewer`)
-- Responsive application shell and dashboard foundation
+- Active-account check
+- User roles foundation
+- Responsive application shell
 
-### Planned phases
-1. Record registration, search, filtering and archive
-2. Category and department management
-3. Private document attachments and secure downloads
-4. Dashboard analytics, reports and audit trail
-5. Automated testing, accessibility and security review
+### Phase 2 — Record management
+- Create, list, view and edit records
+- Generated unique reference numbers (`RR-YYYYMMDD-XXXXX`)
+- Incoming, outgoing, internal and other document types
+- Categories, department and document date
+- Search by reference, title and department
+- Filter by type and active / archived status
+- Archive and restore records
+- Dashboard counts and recently added records
 
 ## Requirements
 - PHP 8.2+
 - Composer
-- MySQL 8+
-- Node.js and npm (for future frontend asset compilation)
+- A supported database (MySQL/MariaDB recommended)
 
-## Local setup
+## Setup
+1. Install dependencies: `composer install`
+2. Copy `.env.example` to `.env` if `.env` does not exist.
+3. Configure database connection values in `.env`.
+4. Generate an application key only if `APP_KEY` is empty: `php artisan key:generate`
+5. Run additive migrations: `php artisan migrate`
+6. Run automated tests: `php artisan test`
+7. Start local server: `php artisan serve`
 
-```bash
-composer install
-copy .env.example .env
-php artisan key:generate
-```
+## Important data-safety note
+Do not run `php artisan migrate:fresh`, `db:wipe`, or truncate tables on a database containing important data. Back up the database before applying migrations.
 
-Configure the MySQL connection in `.env`, then run:
-
-```bash
-php artisan migrate
-php artisan serve
-```
-
-Open `http://127.0.0.1:8000/login`.
-
-Create the first administrator using a controlled, secure account-creation process. Public registration is intentionally not enabled.
-
-## Roles
-- `super_admin`: full system administration
-- `admin`: operational administration
-- `record_keeper`: create and maintain records
-- `viewer`: read-only access
-
-Role middleware is registered as `role`. Example: `->middleware(['auth', 'role:super_admin,admin'])`.
-
-## Safety
-- Do not run `php artisan migrate:fresh` or `php artisan db:wipe` against a database containing real data.
-- Keep `.env` and credentials out of Git.
-- Uploaded documents will be private by design in the document-management phase.
-- Do not enable public registration without an administrator approval workflow.
-
-## Testing
-
-```bash
-php artisan test
-```
+## Current limitations
+- File attachments, advanced permissions, category administration, audit logs and reports are planned for later phases.
+- Automated Laravel tests require Composer dependencies and a configured test database. PHP syntax checks have been run, but runtime/database tests have not yet been executed in this packaged environment.
