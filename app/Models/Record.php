@@ -13,12 +13,12 @@ class Record extends Model
     protected $fillable = [
         'reference_number', 'title', 'description', 'document_type',
         'category_id', 'department', 'document_date', 'status',
-        'created_by', 'archived_at',
+        'created_by', 'archived_at', 'due_at',
     ];
 
     protected function casts(): array
     {
-        return ['document_date' => 'date', 'archived_at' => 'datetime'];
+        return ['document_date' => 'date', 'due_at' => 'date', 'archived_at' => 'datetime'];
     }
 
     public function category(): BelongsTo

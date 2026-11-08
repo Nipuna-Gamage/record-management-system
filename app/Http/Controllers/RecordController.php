@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Support\ActivityLogger;
+use App\Models\User;
+use App\Notifications\RecordCreatedNotification;
 
 use App\Models\Category;
 use App\Models\Record;
@@ -45,7 +47,7 @@ class RecordController extends Controller
 
     public function create(): View
     {
-        return view('records.create', ['categories' => Category::where('is_active', true)->orderBy('name')->get()]);
+        return view('records.create', ['categories' => Category::where('is_active', true)->orderBy('name')->get(), 'record' => null]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -56,6 +58,9 @@ class RecordController extends Controller
 
         $record = Record::create($data);
         ActivityLogger::log('record.created', 'Created record '.$record->reference_number, $record);
+        User::where('is_active', true)->whereIn('role', ['admin', 'manager'])->where('id', '!=', $request->user()->id)->get()
+            ->each(fn (User $user) => $user->notify(new RecordCreatedNotification($record)));
+        $request->user()->notify(new RecordCreatedNotification($record));
 
         return redirect()->route('records.index')->with('success', 'Record created successfully.');
     }
@@ -113,6 +118,7 @@ class RecordController extends Controller
             'category_id' => ['nullable', 'integer', 'exists:categories,id'],
             'department' => ['nullable', 'string', 'max:120'],
             'document_date' => ['nullable', 'date'],
+            'due_at' => ['nullable', 'date'],
         ]);
     }
 

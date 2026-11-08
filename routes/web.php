@@ -5,6 +5,9 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\LogController;
 use App\Http\Controllers\RecordAttachmentController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\SearchController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -14,6 +17,10 @@ Route::middleware('guest')->group(function () {
 Route::post('/logout', [AuthController::class, 'destroy'])->middleware('auth')->name('logout');
 
 Route::middleware(['auth'])->group(function () {
+    Route::get('/search', SearchController::class)->name('search');
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::patch('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
+    Route::post('/notifications/{notification}/read', [NotificationController::class, 'read'])->name('notifications.read');
     Route::get('/', function () {
         return view('dashboard', [
             'totalRecords' => \App\Models\Record::where('status', 'active')->count(),
@@ -36,6 +43,8 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/records/{record}/attachments/{attachment}', [RecordAttachmentController::class, 'destroy'])
         ->middleware('role:admin,manager,staff')->name('records.attachments.destroy');
     Route::middleware('role:admin,manager')->group(function () {
+        Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+        Route::get('/reports/export', [ReportController::class, 'export'])->name('reports.export');
         Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
         Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
         Route::put('/categories/{category}', [CategoryController::class, 'update'])->name('categories.update');

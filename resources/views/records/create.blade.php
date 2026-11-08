@@ -9,6 +9,7 @@
     <div class="field"><label for="category_id">Category</label><select id="category_id" name="category_id"><option value="">Uncategorized</option>@foreach($categories as $category)<option value="{{ $category->id }}" @selected((string)old('category_id',$record?->category_id)===(string)$category->id)>{{ $category->name }}</option>@endforeach</select></div>
     <div class="field"><label for="department">Department</label><input id="department" name="department" value="{{ old('department',$record?->department) }}" maxlength="120" placeholder="e.g. Administration"></div>
     <div class="field"><label for="document_date">Document date</label><input id="document_date" type="date" name="document_date" value="{{ old('document_date',$record?->document_date?->format('Y-m-d')) }}"></div>
+    <div class="field"><label for="due_at">Due date / Reminder date</label><input id="due_at" type="date" name="due_at" value="{{ old('due_at',$record?->due_at?->format('Y-m-d')) }}"><small class="muted">Optional. Managers and the record creator receive a reminder within 3 days of this date.</small>@error('due_at')<small class="field-error">{{ $message }}</small>@enderror</div>
     <div class="field full-field"><label for="description">Description / Notes</label><textarea id="description" name="description" rows="5" maxlength="10000" placeholder="Add relevant details…">{{ old('description',$record?->description) }}</textarea></div>
 </div>
 

@@ -12,11 +12,14 @@
         <p class="nav-label">WORKSPACE</p>
         <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">▦ <span>Dashboard</span></a>
         <a class="nav-link {{ request()->routeIs('records.*') ? 'active' : '' }}" href="{{ route('records.index') }}">▤ <span>Records</span></a>
+        <a class="nav-link {{ request()->routeIs('notifications.*') ? 'active' : '' }}" href="{{ route('notifications.index') }}">♧ <span>Notifications</span>@php($unreadNotifications = auth()->user()->unreadNotifications()->count()) @if($unreadNotifications > 0)<span class="notification-count">{{ $unreadNotifications > 99 ? '99+' : $unreadNotifications }}</span>@endif</a>
         @if(in_array(auth()->user()->role, ['admin', 'manager']))
             <a class="nav-link {{ request()->routeIs('categories.*') ? 'active' : '' }}" href="{{ route('categories.index') }}">▦ <span>Categories</span></a>
+            <a class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}" href="{{ route('reports.index') }}">▧ <span>Reports</span></a>
         @endif
         @if(auth()->user()->role === 'admin')
-            <a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}" href="{{ route('users.index') }}">♙ <span>Users</span></a>\n            <a class="nav-link {{ request()->routeIs('logs.*') ? 'active' : '' }}" href="{{ route('logs.index') }}">◷ <span>Activity Logs</span></a>
+            <a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}" href="{{ route('users.index') }}">♙ <span>Users</span></a>
+            <a class="nav-link {{ request()->routeIs('logs.*') ? 'active' : '' }}" href="{{ route('logs.index') }}">◷ <span>Activity Logs</span></a>
         @endif
         <div class="sidebar-bottom">
             <div class="user-chip"><span class="avatar">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</span><span><strong>{{ auth()->user()->name }}</strong><small>{{ str_replace('_', ' ', ucfirst(auth()->user()->role)) }}</small></span></div>
@@ -24,7 +27,14 @@
         </div>
     </aside>
     <main class="main-content">
-        <header class="topbar"><span>Workspace / @yield('title', 'Dashboard')</span><span class="status-dot">● System online</span></header>
+        <header class="topbar">
+            <span class="breadcrumb">Workspace / @yield('title', 'Dashboard')</span>
+            <form class="topbar-search" method="GET" action="{{ route('search') }}" role="search">
+                <input type="search" name="q" minlength="2" maxlength="100" required placeholder="Search records…" aria-label="Search records">
+                <button type="submit" aria-label="Submit search">⌕</button>
+            </form>
+            <span class="status-dot">● System online</span>
+        </header>
         @if (session('success'))<div class="success">{{ session('success') }}</div>@endif
         @if ($errors->any())<div class="alert validation-alert">Please check the form: {{ $errors->first() }}</div>@endif
         @yield('content')
