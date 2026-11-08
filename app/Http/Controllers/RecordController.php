@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\ActivityLogger;
+
 use App\Models\Category;
 use App\Models\Record;
 use Illuminate\Http\RedirectResponse;
@@ -52,7 +54,8 @@ class RecordController extends Controller
         $data['reference_number'] = $this->newReferenceNumber();
         $data['created_by'] = $request->user()->id;
 
-        Record::create($data);
+        $record = Record::create($data);
+        ActivityLogger::log('record.created', 'Created record '.$record->reference_number, $record);
 
         return redirect()->route('records.index')->with('success', 'Record created successfully.');
     }
@@ -76,6 +79,7 @@ class RecordController extends Controller
     {
         abort_if($record->status === 'archived', 404);
         $record->update($this->validatedData($request));
+        ActivityLogger::log('record.updated', 'Updated record '.$record->reference_number, $record);
 
         return redirect()->route('records.show', $record)->with('success', 'Record updated successfully.');
     }
@@ -84,6 +88,7 @@ class RecordController extends Controller
     {
         if ($record->status !== 'archived') {
             $record->update(['status' => 'archived', 'archived_at' => now()]);
+            ActivityLogger::log('record.archived', 'Archived record '.$record->reference_number, $record);
         }
 
         return redirect()->route('records.index', ['status' => 'archived'])->with('success', 'Record archived.');
@@ -93,6 +98,7 @@ class RecordController extends Controller
     {
         if ($record->status === 'archived') {
             $record->update(['status' => 'active', 'archived_at' => null]);
+            ActivityLogger::log('record.restored', 'Restored record '.$record->reference_number, $record);
         }
 
         return redirect()->route('records.show', $record)->with('success', 'Record restored.');

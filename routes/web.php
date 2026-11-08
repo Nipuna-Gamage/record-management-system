@@ -3,6 +3,8 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\RecordController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\LogController;
+use App\Http\Controllers\RecordAttachmentController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -40,6 +42,7 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
     });
     Route::middleware('role:admin')->group(function () {
+        Route::get('/activity-logs', [LogController::class, 'index'])->name('logs.index');
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
         Route::post('/users', [UserController::class, 'store'])->name('users.store');
         Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\ActivityLogger;
+
 use App\Models\Category;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -20,7 +22,8 @@ class CategoryController extends Controller
     {
         $data = $this->validated($request);
         $data['slug'] = $this->uniqueSlug($data['name']);
-        Category::create($data);
+        $category = Category::create($data);
+        ActivityLogger::log('category.created', 'Created category '.$category->name, $category);
         return back()->with('success', 'Category created successfully.');
     }
 
@@ -29,6 +32,7 @@ class CategoryController extends Controller
         $data = $this->validated($request, $category);
         $data['slug'] = $this->uniqueSlug($data['name'], $category->id);
         $category->update($data);
+        ActivityLogger::log('category.updated', 'Updated category '.$category->name, $category);
         return back()->with('success', 'Category updated successfully.');
     }
 
@@ -37,6 +41,7 @@ class CategoryController extends Controller
         if ($category->records()->exists()) {
             return back()->withErrors(['category' => 'This category is used by records. Deactivate it instead.']);
         }
+        ActivityLogger::log('category.deleted', 'Deleted category '.$category->name, $category);
         $category->delete();
         return back()->with('success', 'Category deleted.');
     }

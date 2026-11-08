@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\ActivityLogger;
+
 use App\Models\Record;
 use App\Models\RecordAttachment;
 use Illuminate\Http\RedirectResponse;
@@ -28,13 +30,14 @@ class RecordAttachmentController extends Controller
         foreach ($validated['files'] as $file) {
             $path = $file->store('record-attachments/'.$record->id, 'local');
 
-            $record->attachments()->create([
+            $attachment = $record->attachments()->create([
                 'uploaded_by' => $request->user()->id,
                 'original_name' => basename($file->getClientOriginalName()),
                 'stored_path' => $path,
                 'mime_type' => $file->getMimeType(),
                 'size_bytes' => $file->getSize(),
             ]);
+            ActivityLogger::log('attachment.uploaded', 'Uploaded file '.$attachment->original_name.' to '.$record->reference_number, $attachment);
         }
 
         return redirect()->route('records.show', $record)->with('success', 'File(s) uploaded securely.');
@@ -45,6 +48,7 @@ class RecordAttachmentController extends Controller
         abort_unless($attachment->record_id === $record->id, 404);
         abort_unless(Storage::disk('local')->exists($attachment->stored_path), 404);
 
+        ActivityLogger::log('attachment.downloaded', 'Downloaded file '.$attachment->original_name, $attachment);
         return Storage::disk('local')->download(
             $attachment->stored_path,
             $attachment->original_name,
@@ -58,6 +62,7 @@ class RecordAttachmentController extends Controller
         abort_if($record->status === 'archived', 404);
 
         Storage::disk('local')->delete($attachment->stored_path);
+        ActivityLogger::log('attachment.deleted', 'Deleted file '.$attachment->original_name.' from '.$record->reference_number, $attachment);
         $attachment->delete();
 
         return redirect()->route('records.show', $record)->with('success', 'Attachment deleted.');

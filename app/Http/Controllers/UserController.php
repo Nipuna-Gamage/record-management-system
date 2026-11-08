@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\ActivityLogger;
+
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -26,7 +28,8 @@ class UserController extends Controller
         ]);
         $data['password'] = Hash::make($data['password']);
         $data['is_active'] = true;
-        User::create($data);
+        $created = User::create($data);
+        ActivityLogger::log('user.created', 'Created user '.$created->email, $created);
         return back()->with('success', 'User created successfully.');
     }
 
@@ -47,6 +50,7 @@ class UserController extends Controller
             unset($data['password']);
         }
         $user->update($data);
+        ActivityLogger::log('user.updated', 'Updated user '.$user->email, $user);
         return back()->with('success', 'User updated successfully.');
     }
 
@@ -57,6 +61,7 @@ class UserController extends Controller
             return back()->withErrors(['user' => 'At least one active administrator must remain.']);
         }
         $user->update(['is_active' => !$user->is_active]);
+        ActivityLogger::log($user->is_active ? 'user.activated' : 'user.deactivated', 'Changed account status for '.$user->email, $user);
         return back()->with('success', 'User status updated.');
     }
 }

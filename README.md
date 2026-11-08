@@ -87,3 +87,17 @@ php artisan test
 ```
 
 Do not use `migrate:fresh` on a database containing records. Configure PHP's `upload_max_filesize` and `post_max_size` to at least 10M and 110M respectively (or higher) if you want to upload multiple files in one request. For production, also configure web-server request limits, malware scanning, backups, and an appropriate retention policy.
+
+
+## Phase 5 — Audit Logs
+
+The administrator-only Activity Logs page is available at `/activity-logs`.
+It records successful sign-in/sign-out, record create/update/archive/restore,
+attachment upload/download/delete, category create/update/delete, and user
+create/update/activate/deactivate actions. Each entry stores the actor (when
+authenticated), action, description, related model, IP address, user agent,
+and timestamp. Logs are intended as an audit trail and should not be edited
+through normal application screens.
+
+Run the additive migration with `php artisan migrate` after taking a database
+backup. Do not use `migrate:fresh` on a database containing records.
