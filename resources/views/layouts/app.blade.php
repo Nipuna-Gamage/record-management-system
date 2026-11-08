@@ -1,25 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'Record Room Management')</title>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>@yield('title', 'Dashboard') · RecordRoom</title>
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
 </head>
 <body>
-    <nav>
-        <ul>
-            <li><a href="/">Dashboard</a></li>
-            <li><a href="/records">Records</a></li>
-            <li><a href="/categories">Categories</a></li>
-            @if (Auth::user() && Auth::user()->role === 'super_admin')
-                <li><a href="/users">Manage Users</a></li>
-            @endif
-            <li><a href="/logout">Logout</a></li>
-        </ul>
-    </nav>
-    <div class="container">
+<div class="app-shell">
+    <aside class="sidebar">
+        <a class="brand" href="{{ route('dashboard') }}"><span class="brand-mark small-mark">RR</span><span><strong>RecordRoom</strong><small>DOCUMENT MANAGEMENT</small></span></a>
+        <p class="nav-label">WORKSPACE</p>
+        <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">▦ <span>Dashboard</span></a>
+        <div class="sidebar-bottom">
+            <div class="user-chip"><span class="avatar">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</span><span><strong>{{ auth()->user()->name }}</strong><small>{{ str_replace('_', ' ', ucfirst(auth()->user()->role)) }}</small></span></div>
+            <form method="POST" action="{{ route('logout') }}">@csrf<button class="logout" type="submit">↪ Sign out</button></form>
+        </div>
+    </aside>
+    <main class="main-content">
+        <header class="topbar"><span>Workspace / @yield('title', 'Dashboard')</span><span class="status-dot">● System online</span></header>
+        @if (session('success'))<div class="success">{{ session('success') }}</div>@endif
         @yield('content')
-    </div>
-</body>
-</html>
+    </main>
+</div>
+</body></html>
